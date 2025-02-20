@@ -1,0 +1,68 @@
+---
+- name: Nextcloud
+  hosts: nextcloud
+  become: yes
+
+  tasks:
+    - name: Update Software
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: "yes"
+
+    - name: Install deps
+      ansible.builtin.apt:
+        pkg:
+          - apache2
+          - libapache2-mod-php
+          - acl
+          - php-curl
+          - php-gd
+          - php-json
+          - php-mbstring
+          - php-xml
+          - php-zip
+          - php-intl
+          - php-sqlite3  
+          - php-bcmath
+          - unzip
+          - wget
+          - bzip2
+        state: present
+
+    - name: Install Nextcloud
+      ansible.builtin.unarchive:
+        dest: "/var/www/html"
+        src: "https://download.nextcloud.com/server/releases/latest-30.tar.bz2"
+        remote_src: true
+        owner: "www-data"
+        group: "www-data"
+        creates: "/var/www/html/nextcloud"
+
+    - name: Set permissions for Nextcloud
+      ansible.builtin.file:
+        path: "/var/www/html/nextcloud"
+        owner: "www-data"
+        group: "www-data"
+        recurse: yes
+
+    - name: Configure Apache for Nextcloud
+      ansible.builtin.copy:
+        dest: /etc/apache2/sites-available/nextcloud.conf
+        content: |
+          <VirtualHost *:80>
+              DocumentRoot /var/www/html/nextcloud
+              <Directory /var/www/html/nextcloud/>
+                  Options +FollowSymlinks
+                  AllowOverride All
+                  Require all granted
+              </Directory>
+          </VirtualHost>
+
+    - name: Enable Nextcloud site in Apache
+      ansible.builtin.command:
+        cmd: a2ensite nextcloud.conf
+
+    - name: Reload Apache
+      ansible.builtin.service:
+        name: apache2
+        state: reloaded
