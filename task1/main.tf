@@ -13,6 +13,10 @@ provider "yandex" {
   service_account_key_file = "C:/Users/tatya/.yc-keys/key.json"
 }
 
+resource "yandex_iam_service_account_static_access_key" "service_account_key" {
+  service_account_id = var.service_account_id
+}
+
 resource "yandex_storage_bucket" "tg_bucket" {
   bucket    = var.bucket_name
   folder_id = var.folder_id
@@ -37,8 +41,8 @@ resource "yandex_function" "bot-func" {
     TG_BOT_KEY            = var.tg_bot_key,
     YC_BUCKET_NAME        = var.bucket_name
     YC_FOLDER_ID          = var.folder_id
-    AWS_ACCESS_KEY_ID     = var.aws_access_key_id,
-    AWS_SECRET_ACCESS_KEY = var.aws_secret_access_key,
+    AWS_ACCESS_KEY_ID     = yandex_iam_service_account_static_access_key.service_account_key.access_key
+    AWS_SECRET_ACCESS_KEY = yandex_iam_service_account_static_access_key.service_account_key.secret_key
     YANDEX_API_KEY        = var.yandex_api_key
   }
 

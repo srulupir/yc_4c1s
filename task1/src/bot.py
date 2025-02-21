@@ -11,7 +11,6 @@ import asyncio
 import io
 from logging.config import dictConfig
 
-# Настройка логирования
 dictConfig({
     "version": 1,
     "formatters": {
@@ -32,24 +31,12 @@ dictConfig({
 })
 logger = logging.getLogger(__name__)
 
-# Переменные окружения
 TELEGRAM_API_TOKEN = os.getenv("TG_BOT_KEY")
 YC_GPT_API_KEY = os.getenv("YANDEX_API_KEY")
 YC_STORAGE_BUCKET = os.getenv("YC_BUCKET_NAME")
 YC_PROJECT_FOLDER = os.getenv("YC_FOLDER_ID")
 AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-
-# Сообщения пользователю
-START_MESSAGE = (
-    'Я помогу подготовить ответ на экзаменационный вопрос по дисциплине "Операционные системы".\n'
-    'Пришлите мне фотографию с вопросом или введите его текстом.'
-)
-PHOTO_LIMIT_MESSAGE = "Я могу обработать только одну фотографию."
-OCR_FAILURE_MESSAGE = "Я не могу обработать эту фотографию."
-UNSUPPORTED_MESSAGE = "Я могу обработать только текстовое сообщение или фотографию."
-GPT_ERROR_MESSAGE = "Я не смог подготовить ответ на экзаменационный вопрос."
-
 
 def fetch_instruction_from_storage():
     try:
@@ -63,7 +50,6 @@ def fetch_instruction_from_storage():
     except Exception as e:
         logger.error(f"Ошибка загрузки инструкции: {e}")
         return None
-
 
 def get_gpt_response(question_text):
     instruction = fetch_instruction_from_storage()
@@ -88,14 +74,17 @@ def get_gpt_response(question_text):
             },
             json=payload,
         )
-        return response.json().get('result', {}).get('alternatives', [{}])[0].get('message', {}).get('text', GPT_ERROR_MESSAGE)
+        return response.json().get('result', {}).get('alternatives', [{}])[0].get('message', {}).get('text', "Я не смог подготовить ответ на экзаменационный вопрос.")
     except Exception as e:
         logger.error(f"Ошибка запроса к YandexGPT API: {e}")
-        return GPT_ERROR_MESSAGE
+        return "Я не смог подготовить ответ на экзаменационный вопрос."
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(START_MESSAGE)
+    await update.message.reply_text(
+        "Я помогу подготовить ответ на экзаменационный вопрос по дисциплине 'Операционные системы'.\n"
+        "Пришлите мне фотографию с вопросом или введите его текстом."
+    )
 
 
 async def process_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -107,7 +96,9 @@ async def process_text_message(update: Update, context: ContextTypes.DEFAULT_TYP
 
 async def process_image_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message.media_group_id:
-        await update.message.reply_text(PHOTO_LIMIT_MESSAGE)
+        await update.message.reply_text(
+            "Я могу обработать только одну фотографию."
+            )
         return
 
     photo = update.message.photo[-1]
@@ -128,14 +119,20 @@ async def process_image_message(update: Update, context: ContextTypes.DEFAULT_TY
             answer = get_gpt_response(ocr_text)
             await update.message.reply_text(answer)
         else:
-            await update.message.reply_text(OCR_FAILURE_MESSAGE)
+            await update.message.reply_text(
+                "Я не могу обработать эту фотографию."
+            )
     except Exception as e:
         logger.error(f"Ошибка OCR: {e}")
-        await update.message.reply_text(OCR_FAILURE_MESSAGE)
+        await update.message.reply_text(
+            "Я не могу обработать эту фотографию."
+        )
 
 
 async def process_unknown_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(UNSUPPORTED_MESSAGE)
+    await update.message.reply_text(
+        "Я могу обработать только текстовое сообщение или фотографию."
+    )
 
 
 async def handler(event, context):
