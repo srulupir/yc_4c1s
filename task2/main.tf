@@ -206,20 +206,6 @@ EOT
   depends_on = [yandex_function.tg_bot_func]
 }
 
-
-/*
-resource "null_resource" "delete_webhook" {
-  provisioner "local-exec" {
-    when = destroy
-    command = <<EOT
-curl -X POST https://api.telegram.org/bot${var.telegram_bot_token}/deleteWebhook
-EOT
-  }
-  depends_on = [yandex_function.tg_bot_func]
-}
-*/
-
-
 resource "archive_file" "zip1" {
   type        = "zip"
   output_path = "bot.zip"

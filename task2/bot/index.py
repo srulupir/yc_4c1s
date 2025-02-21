@@ -47,38 +47,36 @@ def get_face(chat_id):
     send_photo(chat_id, face_url)
 
     user_sessions[chat_id] = {"metadata_key": metadata_key, "face_url": face_url}
-
-    # Логируем перед сохранением
-    print(f"Сохранение имени для фотографии: {metadata_key}")  # Логируем metadata_key
+    print(f"Сохранение имени для фотографии: {metadata_key}")  
     metadata = s3_client.get_object(Bucket=PROCESSED_FACES_BUCKET_NAME, Key=metadata_key)
     metadata = json.loads(metadata["Body"].read().decode("utf-8"))
-    print(f"Метаданные фотографии перед изменением: {metadata}")  # Логируем метаданные
+    print(f"Метаданные фотографии перед изменением: {metadata}")  
 
 def find_photo(chat_id, name):
-    print(f"получена команда /find с текстом - {name}")  # Лог входного параметра
+    print(f"получена команда /find с текстом - {name}")  
 
     if not name:
-        print("Ошибка: имя не передано!")  # Лог ошибки
+        print("Ошибка: имя не передано!")
         send_message(chat_id, "Введите имя для поиска.")
         return
 
-    print(f"Начинаем поиск фотографий для имени: {name}")  # Лог перед поиском
+    print(f"Начинаем поиск фотографий для имени: {name}")  
     found_photos = search_original_photos_by_name(name)
     
     if found_photos is None:
-        print(f"Ошибка: функция search_original_photos_by_name вернула None для имени {name}")  # Лог ошибки
+        print(f"Ошибка: функция search_original_photos_by_name вернула None для имени {name}")  
         send_message(chat_id, "Произошла ошибка при поиске фотографий.")
         return
 
     if not found_photos:
-        print(f"Фотографии с именем {name} не найдены.")  # Лог отсутствия результатов
+        print(f"Фотографии с именем {name} не найдены.")  
         send_message(chat_id, f"Фотографии с именем {name} не найдены.")
         return
 
-    print(f"Найдено {len(found_photos)} фотографий для имени {name}")  # Лог количества найденных фото
+    print(f"Найдено {len(found_photos)} фотографий для имени {name}")  
     for photo_key in found_photos:
         photo_url = f"{API_GATEWAY_ORIGINAL}/?image={photo_key}"
-        print(f"Отправляем фото: {photo_url}")  # Лог отправки фото
+        print(f"Отправляем фото: {photo_url}")  
         send_photo(chat_id, photo_url)
 
 def send_message(chat_id, text):
@@ -86,7 +84,7 @@ def send_message(chat_id, text):
     payload = {"chat_id": chat_id, "text": text}
     try:
         response = requests.post(url, json=payload)
-        print(f"Ответ Telegram API: {response.status_code}, {response.text}")  # Логируем ответ
+        print(f"Ответ Telegram API: {response.status_code}, {response.text}") 
     except Exception as e:
         print(f"Ошибка отправки сообщения: {e}")
 
@@ -95,7 +93,7 @@ def send_photo(chat_id, photo_url):
     payload = {"chat_id": chat_id, "photo": photo_url}
     try:
         response = requests.post(url, json=payload)
-        print(f"Ответ отправки фото: {response.status_code}")  # Логируем ответ
+        print(f"Ответ отправки фото: {response.status_code}") 
     except Exception as e:
         print(f"Ошибка отправки фото: {e}")
 
@@ -116,10 +114,10 @@ def sending_photo_error(message, chat_id):
 def update_face_name(metadata_key, name):
     response = s3_client.get_object(Bucket=PROCESSED_FACES_BUCKET_NAME, Key=metadata_key)
     metadata = json.loads(response["Body"].read().decode("utf-8"))
-    print(f"Перед сохранением: {metadata}")  # Логируем метаданные до изменения
+    print(f"Перед сохранением: {metadata}")  
     metadata["name"] = name
     store_metadata(metadata["face_key"], metadata)
-    print(f"Метаданные после обновления: {metadata}")  # Логируем после изменения
+    print(f"Метаданные после обновления: {metadata}") 
 
 def store_metadata(face_key, metadata):
     if "name" not in metadata or not metadata["name"]:
@@ -136,7 +134,7 @@ def store_metadata(face_key, metadata):
         print(f"Метаданные успешно сохранены для фотографии с ключом {face_key}")
 
 def search_original_photos_by_name(name):
-    print(f"Поиск фотографий с именем: {name}")  # Логируем запрос
+    print(f"Поиск фотографий с именем: {name}")  
     response = s3_client.list_objects_v2(Bucket=PROCESSED_FACES_BUCKET_NAME)
     original_photos = []
 
@@ -150,8 +148,8 @@ def search_original_photos_by_name(name):
                     if obj_ph["Key"].endswith(".jpg") and metadata["original_photo_key"] == obj_ph["Key"]:
                         original_photos.append(metadata["original_photo_key"])
 
-    print(f"Найдено {len(original_photos)} фотографий.")  # Логируем количество найденных
-    print(f"📸 Найденные фото (ключи): {original_photos}")
+    print(f"Найдено {len(original_photos)} фотографий.")  
+    print(f"Найденные фото (ключи): {original_photos}")
     return original_photos
 
 def handler(event, context):
